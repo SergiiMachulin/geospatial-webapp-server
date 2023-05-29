@@ -141,7 +141,7 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Geospatial webapp server",
+    "TITLE": "Geospatial API",
     "DESCRIPTION": "Server-side API for managing places, leveraging PostgreSQL's PostGIS extension for geospatial data storage and querying",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
