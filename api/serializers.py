@@ -1,8 +1,17 @@
-from rest_framework import serializers
+from rest_framework.serializers import ModelSerializer
+from rest_framework_gis.serializers import GeometryField
+
 from .models import Place
 
 
-class PlaceSerializer(serializers.ModelSerializer):
+class PlaceSerializer(ModelSerializer):
+    geom = GeometryField()
+
     class Meta:
         model = Place
-        fields = ["id", "name", "description", "geom"]
+        fields = (
+            "id",
+            "name",
+            "description",
+            "geom",
+        )
