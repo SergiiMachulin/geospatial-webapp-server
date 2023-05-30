@@ -1,10 +1,19 @@
 from django.urls import path, include
-from rest_framework import routers
-from api.views import PlaceViewSet
+from rest_framework.routers import SimpleRouter
 
-router = routers.DefaultRouter()
-router.register(r"places", PlaceViewSet, basename="place")
+from .views import PlaceViewSet
+
+router = SimpleRouter()
+router.register("places", PlaceViewSet, basename="place")
+
 
 urlpatterns = [
     path("", include(router.urls)),
+    path(
+        "places/nearest_place/",
+        PlaceViewSet.as_view({"get": "nearest_place"}),
+        name="place-nearest-place",
+    ),
 ]
+
+app_name = "api"

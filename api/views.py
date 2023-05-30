@@ -1,62 +1,130 @@
+from django.core.exceptions import ValidationError
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiExample,
+    OpenApiParameter,
+)
 from rest_framework import viewsets, status
-from rest_framework.generics import get_object_or_404
-from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
+
 from django.contrib.gis.geos import Point
 from django.contrib.gis.db.models.functions import Distance
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
 from .models import Place
 from .serializers import PlaceSerializer
 
 
+class PlacePagination(PageNumberPagination):
+    page_size = 5
+    max_page_size = 100
+
+
 class PlaceViewSet(viewsets.ModelViewSet):
-    queryset = Place.objects.all()
+    queryset = Place.objects.order_by("id")
     serializer_class = PlaceSerializer
+    pagination_class = PlacePagination
 
+    @extend_schema(
+        description="Retrieve a list of places.",
+        responses={200: PlaceSerializer(many=True)},
+    )
     def list(self, request, *args, **kwargs):
-        places = self.queryset
-        serializer = self.serializer_class(places, many=True)
-        return Response(serializer.data)
+        return super().list(request, *args, **kwargs)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def update(self, request, pk=None, *args, **kwargs):
-        place = get_object_or_404(self.queryset, pk=pk)
-        serializer = self.serializer_class(place, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, pk=None, *args, **kwargs):
-        place = get_object_or_404(self.queryset, pk=pk)
-        place.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    def nearest_place(self, request):
-        lat = request.query_params.get("lat")
-        lon = request.query_params.get("lon")
-
-        if lat is None or lon is None:
-            return Response(
-                {"error": "Latitude and longitude parameters are required."},
-                status=status.HTTP_400_BAD_REQUEST,
+    @extend_schema(
+        description="Create a new place.",
+        request=PlaceSerializer,
+        responses={201: PlaceSerializer},
+        examples=[
+            OpenApiExample(
+                name="Example 1 create Place",
+                value={
+                    "name": "New Place",
+                    "description": "Super new",
+                    "geom": "SRID=4326;POINT(100 100)",
+                },
+                response_only=False,
             )
+        ],
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
 
-        point = Point(float(lon), float(lat), srid=4326)
-        nearest_place = (
-            self.queryset.annotate(distance=Distance("geom", point))
+    @extend_schema(
+        description="Retrieve a single place by ID.",
+        responses={200: PlaceSerializer()},
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    @extend_schema(
+        description="Update a place by ID.",
+        request=PlaceSerializer,
+        responses={200: PlaceSerializer()},
+    )
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @extend_schema(
+        description="Partial update of a place by ID.",
+        request=PlaceSerializer,
+        responses={200: PlaceSerializer()},
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    @extend_schema(
+        description="Delete a place by ID.",
+        responses={204: None},
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="latitude",
+                description="Latitude coordinate of the target location.",
+                required=True,
+                type=OpenApiTypes.NUMBER,
+                location=OpenApiParameter.QUERY,
+            ),
+            OpenApiParameter(
+                name="longitude",
+                description="Longitude coordinate of the target location.",
+                required=True,
+                type=OpenApiTypes.NUMBER,
+                location=OpenApiParameter.QUERY,
+            ),
+        ],
+        description="Find the nearest place to the given coordinates.",
+        responses={200: PlaceSerializer()},
+        examples=[
+            OpenApiExample(
+                name="Find nearest place",
+                value={"latitude": 1, "longitude": 1},
+            )
+        ],
+    )
+    @action(detail=False, methods=["get"])
+    def nearest_place(self, request):
+        try:
+            latitude = float(request.query_params.get("latitude"))
+            longitude = float(request.query_params.get("longitude"))
+
+        except (ValueError, TypeError):
+            raise ValidationError("Invalid latitude or longitude values.")
+
+        point = Point(longitude, latitude, srid=4326)
+
+        closest_place = (
+            Place.objects.annotate(distance=Distance("geom", point))
             .order_by("distance")
             .first()
         )
 
-        if nearest_place is None:
-            return Response(
-                {"error": "No places found."}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = self.serializer_class(nearest_place)
-        return Response(serializer.data)
+        serializer = self.get_serializer(closest_place)
+        return Response(serializer.data, status.HTTP_200_OK)
