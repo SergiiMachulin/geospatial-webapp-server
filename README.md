@@ -40,7 +40,7 @@ To install and set up the geospatial web application locally, follow these steps
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/SergiiMachulin/geospatial-webapp-server.git`
+git clone https://github.com/SergiiMachulin/geospatial-webapp-server.git
 ```
 2. Change to the project directory: 
 ```bash
