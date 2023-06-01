@@ -6,7 +6,6 @@ from drf_spectacular.utils import (
     OpenApiParameter,
 )
 from rest_framework import viewsets, status
-from rest_framework.pagination import PageNumberPagination
 
 from django.contrib.gis.geos import Point
 from django.contrib.gis.db.models.functions import Distance
@@ -15,12 +14,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from .models import Place
+from .pagination import PlacePagination
 from .serializers import PlaceSerializer
-
-
-class PlacePagination(PageNumberPagination):
-    page_size = 5
-    max_page_size = 100
 
 
 class PlaceViewSet(viewsets.ModelViewSet):
@@ -119,7 +114,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
         except (ValueError, TypeError):
             raise ValidationError("Invalid latitude or longitude values.")
 
-        point = Point(longitude, latitude, srid=4326)
+        point = Point(latitude, longitude, srid=4326)
 
         nearest_place = (
             Place.objects.annotate(distance=Distance("geom", point))
