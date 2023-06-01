@@ -9,11 +9,6 @@ router.register("places", PlaceViewSet, basename="place")
 
 urlpatterns = [
     path("", include(router.urls)),
-    path(
-        "places/nearest_place/",
-        PlaceViewSet.as_view({"get": "nearest_place"}),
-        name="place-nearest-place",
-    ),
 ]
 
 app_name = "api"
