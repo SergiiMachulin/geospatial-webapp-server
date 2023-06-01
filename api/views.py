@@ -11,6 +11,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.contrib.gis.geos import Point
 from django.contrib.gis.db.models.functions import Distance
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from .models import Place
@@ -31,7 +32,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
         description="Retrieve a list of places.",
         responses={200: PlaceSerializer(many=True)},
     )
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
     @extend_schema(
@@ -50,14 +51,14 @@ class PlaceViewSet(viewsets.ModelViewSet):
             )
         ],
     )
-    def create(self, request, *args, **kwargs):
+    def create(self, request: Request, *args, **kwargs) -> Response:
         return super().create(request, *args, **kwargs)
 
     @extend_schema(
         description="Retrieve a single place by ID.",
         responses={200: PlaceSerializer()},
     )
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request: Request, *args, **kwargs) -> Response:
         return super().retrieve(request, *args, **kwargs)
 
     @extend_schema(
@@ -65,7 +66,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
         request=PlaceSerializer,
         responses={200: PlaceSerializer()},
     )
-    def update(self, request, *args, **kwargs):
+    def update(self, request: Request, *args, **kwargs) -> Response:
         return super().update(request, *args, **kwargs)
 
     @extend_schema(
@@ -73,14 +74,14 @@ class PlaceViewSet(viewsets.ModelViewSet):
         request=PlaceSerializer,
         responses={200: PlaceSerializer()},
     )
-    def partial_update(self, request, *args, **kwargs):
+    def partial_update(self, request: Request, *args, **kwargs) -> Response:
         return super().partial_update(request, *args, **kwargs)
 
     @extend_schema(
         description="Delete a place by ID.",
         responses={204: None},
     )
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Request, *args, **kwargs) -> Response:
         return super().destroy(request, *args, **kwargs)
 
     @extend_schema(
@@ -110,7 +111,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
         ],
     )
     @action(detail=False, methods=["get"])
-    def nearest_place(self, request):
+    def nearest_place(self, request: Request) -> Response:
         try:
             latitude = float(request.query_params.get("latitude"))
             longitude = float(request.query_params.get("longitude"))
@@ -120,11 +121,11 @@ class PlaceViewSet(viewsets.ModelViewSet):
 
         point = Point(longitude, latitude, srid=4326)
 
-        closest_place = (
+        nearest_place = (
             Place.objects.annotate(distance=Distance("geom", point))
             .order_by("distance")
             .first()
         )
 
-        serializer = self.get_serializer(closest_place)
+        serializer = self.get_serializer(nearest_place)
         return Response(serializer.data, status.HTTP_200_OK)
