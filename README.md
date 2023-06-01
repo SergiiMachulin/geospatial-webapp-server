@@ -61,7 +61,7 @@ pip install -r requirements.txt
 ```
 6. Set up the PostgreSQL database and configure the connection in `settings.py`:
 - *Set the required environment variables in `.env` file (need to be created, see example - `.env.sample` file)*:
-
+    ##### Postgres
     POSTGRES_DB
     
     POSTGRES_USER
@@ -69,6 +69,8 @@ pip install -r requirements.txt
     POSTGRES_PASSWORD
     
     POSTGRES_HOST
+
+    ##### Django
 
     DJANGO_SECRET_KEY
 
